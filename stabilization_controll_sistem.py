@@ -1,5 +1,8 @@
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+import math as mt
+
 
 
 class MechCalculator():
@@ -12,7 +15,7 @@ class MechCalculator():
 
         self.curent_angle = 0
         self.curent_anguler_velocity = 0
-        self.curent_anguler_acceleration =0
+        self.curent_anguler_acceleration = 0
 
         self.moment_of_forces = 0
         self.bow_lenght = bow_lenght
@@ -23,7 +26,7 @@ class MechCalculator():
         self.cmd_anguler_acc = 0
 
         self.need_thrust = need_thrust
-        self.virt_time = 0.1
+        self.virt_time = 0.01
 
         self.desired_angle =0
     
@@ -65,9 +68,14 @@ class StabilisationSistem():
 
     def __init__(self, ki_angle, kp_angle, kd_angle,
                  ki_ang_vel, kp_ang_vel, kd_ang_vel, 
-                 saturation_level) -> None:
+                 first_contour_saturation_sup, first_contour_saturation_inf,
+                 second_contour_saturation_sup, second_contour_saturation_inf) -> None:
         
-        self.saturation_level = saturation_level
+        self.first_contour_saturation_sup = first_contour_saturation_sup
+        self.first_contour_saturation_inf = first_contour_saturation_inf
+        self.second_contour_saturation_sup = second_contour_saturation_sup
+        self.second_contour_saturation_inf = second_contour_saturation_inf
+
         self.first_contour_kp_pid = kp_angle
         self.first_contour_ki_pid = ki_angle
         self.first_contour_kd_pid = kd_angle
@@ -76,7 +84,7 @@ class StabilisationSistem():
         self.second_contour_ki_pid = ki_ang_vel
         self.second_contour_kd_pid = kd_ang_vel
 
-        self.fisrt_contour_contrall_sig = 0
+        self.first_contour_contrall_sig = 0
         self.second_contour_contrall_sig = 0
 
         self.first_contour_error = 0
@@ -95,35 +103,55 @@ class StabilisationSistem():
 
         self.first_contour_error = self.mech_sistem.desired_angle - self.mech_sistem.curent_angle
         self.first_contour_error_integral += self.first_contour_error * self.mech_sistem.virt_time
-        self.first_contour_contrall_sig = self.first_contour_kp_pid * self.first_contour_error + self.first_contour_ki_pid * self.first_contour_error_integral 
-        + self.first_contour_kd_pid * (self.first_contour_error - self.first_contour_past_error) / self.mech_sistem.virt_time
-        self.first_contour_past_error = self.first_contour_error
 
-        #self.first_contour_contrall_sig = self.saturation(self.first_contour_contrall_sig)
+        P_regulator = float(format(self.first_contour_kp_pid * self.first_contour_error, ".2f"))
+        I_regulator = float(format(self.first_contour_ki_pid * self.first_contour_error_integral, ".2f"))
+        D_regulator = float(format(self.first_contour_kd_pid * (self.first_contour_error - self.first_contour_past_error) / self.mech_sistem.virt_time, ".2f"))
+
+        self.first_contour_contrall_sig = P_regulator + I_regulator + D_regulator
+        self.first_contour_past_error = self.first_contour_error
+        self.first_contour_contrall_sig = self.first_contour_saturation(self.first_contour_contrall_sig)
 
 
     def PID_second_contour(self):
 
         self.second_contour_error = self.first_contour_contrall_sig - self.mech_sistem.curent_anguler_velocity
         self.second_contour_error_integral += self.second_contour_error * self.mech_sistem.virt_time
-        self.second_contour_contral_sig = self.second_contour_kp_pid * self.second_contour_error + self.second_contour_ki_pid * self.second_contour_error_integral 
-        + self.second_contour_kd_pid * (self.second_contour_error - self.second_contour_past_error) / self.mech_sistem.virt_time
-        self.second_contour_past_error = self.second_contour_error
 
-        #self.second_contour_contrall_sig = self.saturation(self.second_contour_contrall_sig)
+        P_regulator = float(format(self.second_contour_kp_pid * self.second_contour_error, ".2f"))
+        I_regulator = float(format(self.second_contour_ki_pid * self.second_contour_error_integral, ".2f"))
+        D_regulator = float(format(self.second_contour_kd_pid * (self.second_contour_error - self.second_contour_past_error) / self.mech_sistem.virt_time, ".2f"))
+
+        print(P_regulator)
+        print(I_regulator)
+        print(D_regulator)
+        
+        self.second_contour_contrall_sig = (P_regulator + I_regulator + D_regulator)
+        self.second_contour_past_error = self.second_contour_error
+        self.second_contour_contrall_sig = self.second_contour_saturation(self.second_contour_contrall_sig)
+
         self.mech_sistem.set_cmd_anguler_acc(self.second_contour_contrall_sig)
 
 
-    def saturation(self, contrall_signal):
+    def first_contour_saturation(self, contrall_signal):
  
-        if contrall_signal > self.saturation_level:
-            contrall_signal = self.saturation_level
+        if contrall_signal > self.first_contour_saturation_inf:
+            contrall_signal = self.first_contour_saturation_inf
         
-        elif contrall_signal < -self.saturation_level:
-            contrall_signal = self.saturation_level
+        elif contrall_signal < -self.first_contour_saturation_sup:
+            contrall_signal = -self.first_contour_saturation_sup
         
         return contrall_signal
 
+    def second_contour_saturation(self, contrall_signal):
+
+        if contrall_signal > self.second_contour_saturation_inf:
+            contrall_signal = self.second_contour_saturation_inf
+        
+        elif contrall_signal < -self.second_contour_saturation_sup:
+            contrall_signal = -self.second_contour_saturation_sup
+        
+        return contrall_signal
         
     
 
@@ -132,13 +160,17 @@ class Simulator():
 
     def __init__(self, simulation_max_step=20) -> None:
         
-        self.stab_sistem = StabilisationSistem(ki_angle=0.12, kd_angle=0.12, kp_angle=0.12,
-                                               ki_ang_vel=0.12, kd_ang_vel=0.12, kp_ang_vel=0.12,
-                                               saturation_level=1000)
+        self.stab_sistem = StabilisationSistem(ki_angle=0.23, kd_angle=0.30, kp_angle=0.15,
+                                               ki_ang_vel=1.21, kd_ang_vel=23.342, kp_ang_vel=3.420,
+                                               first_contour_saturation_sup=50, first_contour_saturation_inf=300,
+                                               second_contour_saturation_sup=5, second_contour_saturation_inf=15)
         
         self.anguler_position_list = []
         self.anguler_velocity_list = []
         self.anguler_acceleration_list = []
+        self.error_distance = []
+        self.first_contrall_sig_list = []
+        self.second_contrall_sig_list = []
 
         self.simulation_step = 0
         self.simulation_max_step = simulation_max_step
@@ -154,33 +186,53 @@ class Simulator():
             self.anguler_position_list.append(anguler_position)
             self.anguler_velocity_list.append(anguler_velocity)
             self.anguler_acceleration_list.append(anguler_acceleration)
+            self.error_distance.append(self.stab_sistem.mech_sistem.desired_angle- anguler_position)
+            self.first_contrall_sig_list.append(self.stab_sistem.first_contour_contrall_sig)
+            self.second_contrall_sig_list.append(self.stab_sistem.second_contour_contrall_sig)
 
             self.stab_sistem.mech_sistem.calculate_mech()
             self.stab_sistem.mech_sistem.integrator()
             self.stab_sistem.PID_first_contour()
             self.stab_sistem.PID_second_contour()
 
-            self.simulation_step += 1
+            self.simulation_step += self.stab_sistem.mech_sistem.virt_time
         
         self.anguler_position_data = np.asarray(self.anguler_position_list)
         self.anguler_velocity_data = np.asarray(self.anguler_velocity_list)
         self.anguler_acceleration_data = np.asarray(self.anguler_acceleration_list)
+        self.error_distance = np.asarray(self.error_distance)
+        self.desired_anguler_position = np.ones(self.anguler_position_data.shape) * self.stab_sistem.mech_sistem.desired_angle
+        self.first_contrall_signal = np.asarray(self.first_contrall_sig_list)
+        self.second_contrall_signal = np.asarray(self.second_contrall_sig_list)
 
+
+        self.log_dict = {
+            "anguler_acceleration": self.anguler_acceleration_data,
+            "anguler_velocity": self.anguler_velocity_data,
+            "anguler_position_data": self.anguler_position_data,
+            "error_distance": self.error_distance,
+            "desired_anguler_position": self.desired_anguler_position,
+            "first_contrall_signal": self.first_contrall_signal,
+            "second_contrall_signal": self.second_contrall_signal
+        }
+
+        data_frame = pd.DataFrame.from_dict(self.log_dict)
+        print(data_frame)
+        print(self.anguler_position_data)
         return (self.anguler_position_data, self.anguler_velocity_data, self.anguler_acceleration_data)
 
 if __name__ == "__main__":
 
-    sim = Simulator(simulation_max_step=3)
+    sim = Simulator(simulation_max_step=20)
+    sim.stab_sistem.mech_sistem.set_desired_angle(30)
     colors = ["red", "blue", "green"]
-    labels = ["anguler_position", "anguler_velocity", "agnuler_acceleration"]
+    labels = ["anguler_position", "anguler_velocity", "anguler_acceleration"]
     r, v, a = sim.run_simulation()
     samples = [r, v, a]
 
-    fig, axis = plt.subplots(nrows=3)
-    for sample in range(len(axis)):
-        axis[sample].plot(range(1, len(samples[sample]) + 1), samples[sample], color=colors[sample], label=labels[sample])
-        axis[sample].legend(loc="upper left")
-    
+    plt.style.use("dark_background")
+    fig, axis = plt.subplots()
+    axis.plot(range(1, len(sim.first_contrall_signal) + 1), sim.first_contrall_signal, color="blue", label="first signal")
     plt.show()
     
 
