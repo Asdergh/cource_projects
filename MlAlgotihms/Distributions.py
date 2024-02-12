@@ -274,10 +274,16 @@ class NormalDistribution():
                 else:
 
                     raise ValueError("must be array with size: (n, n) or less, not (n, n, n)")
+
         
         animation_function = FuncAnimation(self.figure, demo, interval=10)
         plt.show()
 
+    def calculate_optimal_param(self, data, true_label):
+
+        self.optimal_param = ((((data.T).dot(self.var)).dot(data)).dot((1/2) 
+                            * np.dot(data, self.var) - (1/2) * np.dot(true_label, self.var)))
+        
 # test part
 if __name__ == "__main__":
 

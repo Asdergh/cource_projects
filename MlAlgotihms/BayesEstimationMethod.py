@@ -30,13 +30,12 @@ class BayesEstimationMethod():
                                                 math_mean=self.distributions["data"]["math_mean"],
                                                 covar=self.distributions["data"]["covar"])
         
-        print(self.apo_dist.calculate_distribution(), ": [apo dist]")
-        print(self.data_dist.calculate_distribution(), ": [data dist]")
+        self.apo_dist.calculate_distribution()
+        self.data_dist.calculate_distribution()
         self.apos_dist = self.data_dist * self.apo_dist
 
     def fit(self, input_samples, true_labels):
 
-        
         if self.random_generation:
             self.weights_vector = np.random.normal(0, 1.23, size=input_samples.shape[1])
         
