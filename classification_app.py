@@ -2,14 +2,11 @@ import tensorflow as tf
 import numpy as np
 import cv2 as cv
 import matplotlib.pyplot as plt
+import os
 
 from matplotlib.animation import FuncAnimation
 
 
-
-(train_data, train_label), (test_data, test_label) = tf.keras.datasets.mnist.load_data()
-
-print(train_data[0].shape)
 class FaceClassification():
 
     def __init__(self, input_shape, classification_type, 
@@ -30,8 +27,38 @@ class FaceClassification():
         self.filters_count = filters_count
         self.pooling_size = pooling_size
 
-    def generate_data(self):
-        pass
+    def generate_data(self, base_dir):
+        
+        self.train_dir = os.path.join(base_dir, "train")
+        self.validation_dir = os.path.join(base_dir, "validation")
+        self.test_dir = os.path.join(base_dir, "test")
+
+        self.train_data_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+            self.train_dir,
+            rotation_range=0.12,
+            width_shift_range=0.12,
+            height_shift_range=0.12,
+            horizontal_flip=True
+        )
+
+        self.validation_data_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+            self.validation_dir,
+            rotation_range=0.12,
+            width_shift_range=0.12,
+            height_shift_range=0.12,
+            vertical_flip=True
+        )
+
+        self.test_data_generator = tf.keras.preprocessing.image.ImageDataGenerator(
+            self.test_dir
+            rotation_range=0.12,
+            width_shift_range=0.12,
+            height_shift_range=0.12,
+            horizontal_flip=True,
+            vertical_flip=True
+        )
+
+
     
     def generate_model(self) -> dict:
 
@@ -122,7 +149,10 @@ class FaceClassification():
                 metrics=tf.keras.metrics.Accuracy())
 
             return self.model_discription
-            
+    
+    def fit_model(self):
+
+        pass
 
                 
                 
