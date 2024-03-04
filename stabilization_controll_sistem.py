@@ -101,7 +101,7 @@ class StabilisationSistem():
         self.first_contour_error_integral = 0
         self.second_contour_error_integral = 0
 
-        self.mech_sistem = MechCalculator(moment_of_inertia=7.16914 * 0.00001, bow_lenght=0.17, thrust_koeff=3.9865 * 0.00000001,
+        self.mech_sistem = MechCalculator(moment_of_inertia=7.16914 * (10 ** -5), bow_lenght=0.17, thrust_koeff=3.9865 * (10 ** -8),
                                           copter_mass=0.06, need_thrust=9.456)
 
     def PID_first_contour(self):
@@ -109,9 +109,9 @@ class StabilisationSistem():
         self.first_contour_error = self.mech_sistem.desired_angle - self.mech_sistem.curent_angle
         self.first_contour_error_integral += self.first_contour_error * self.mech_sistem.virt_time
 
-        P_regulator = float(format(self.first_contour_kp_pid * self.first_contour_error, ".2f"))
-        I_regulator = float(format(self.first_contour_ki_pid * self.first_contour_error_integral, ".2f"))
-        D_regulator = float(format(self.first_contour_kd_pid * (self.first_contour_error - self.first_contour_past_error) / self.mech_sistem.virt_time, ".2f"))
+        P_regulator = self.first_contour_kp_pid * self.first_contour_error
+        I_regulator = self.first_contour_ki_pid * self.first_contour_error_integral
+        D_regulator = self.first_contour_kd_pid * ((self.first_contour_error - self.first_contour_past_error) / self.mech_sistem.virt_time)
 
         self.first_contour_contrall_sig = P_regulator + I_regulator + D_regulator
         self.first_contour_past_error = self.first_contour_error
@@ -123,9 +123,9 @@ class StabilisationSistem():
         self.second_contour_error = self.first_contour_contrall_sig - self.mech_sistem.curent_anguler_velocity
         self.second_contour_error_integral += self.second_contour_error * self.mech_sistem.virt_time
 
-        P_regulator = float(format(self.second_contour_kp_pid * self.second_contour_error, ".2f"))
-        I_regulator = float(format(self.second_contour_ki_pid * self.second_contour_error_integral, ".2f"))
-        D_regulator = float(format(self.second_contour_kd_pid * (self.second_contour_error - self.second_contour_past_error) / self.mech_sistem.virt_time, ".2f"))
+        P_regulator = self.second_contour_kp_pid * self.second_contour_error
+        I_regulator = self.second_contour_ki_pid * self.second_contour_error_integral
+        D_regulator = self.second_contour_kd_pid * ((self.second_contour_error - self.second_contour_past_error) / self.mech_sistem.virt_time)
         
         self.second_contour_contrall_sig = (P_regulator + I_regulator + D_regulator)
         self.second_contour_past_error = self.second_contour_error
@@ -161,8 +161,8 @@ class Simulator():
 
     def __init__(self, simulation_max_step=20) -> None:
         
-        self.stab_sistem = StabilisationSistem(ki_angle=0.0013, kd_angle=123.00030, kp_angle=6.7095,
-                                               ki_ang_vel=0.00096, kd_ang_vel=0.0000034, kp_ang_vel=0.00020,
+        self.stab_sistem = StabilisationSistem(ki_angle=0.0013, kd_angle=0.030, kp_angle=12.7095,
+                                               ki_ang_vel=0.00096, kd_ang_vel=0.00034, kp_ang_vel=123.00020,
                                                first_contour_saturation_sup=50, first_contour_saturation_inf=300,
                                                second_contour_saturation_sup=5, second_contour_saturation_inf=15)
         
@@ -188,7 +188,7 @@ class Simulator():
             self.anguler_position_list.append(anguler_position)
             self.anguler_velocity_list.append(anguler_velocity)
             self.anguler_acceleration_list.append(anguler_acceleration)
-            self.error_distance.append(self.stab_sistem.mech_sistem.desired_angle- anguler_position)
+            self.error_distance.append(self.stab_sistem.mech_sistem.desired_angle - anguler_position)
             self.first_contrall_sig_list.append(self.stab_sistem.first_contour_contrall_sig)
             self.second_contrall_sig_list.append(self.stab_sistem.second_contour_contrall_sig)
             self.time_interval.append(self.simulation_step)
@@ -197,6 +197,7 @@ class Simulator():
             self.stab_sistem.mech_sistem.integrator()
             self.stab_sistem.PID_first_contour()
             self.stab_sistem.PID_second_contour()
+            
 
             self.simulation_step += self.stab_sistem.mech_sistem.virt_time
         
@@ -227,30 +228,30 @@ class Simulator():
 
 if __name__ == "__main__":
 
-    sim = Simulator(simulation_max_step=100)
-    sim.stab_sistem.mech_sistem.set_desired_angle(30)
+    sim = Simulator(simulation_max_step=200)
+    sim.stab_sistem.mech_sistem.set_desired_angle(30.0)
     colors = ["red", "blue", "green"]
     labels = ["anguler_position", "anguler_velocity", "anguler_acceleration"]
     r, v, a = sim.run_simulation()
     samples = [r, v, a]
 
     plt.style.use("dark_background")
-    fig, axis = plt.subplots(nrows=5)
+    fig, axis = plt.subplots(nrows=3)
 
-    axis[0].plot(sim.time_interval, sim.first_contrall_signal, color="blue", label="first signal")
-    axis[0].legend(loc="upper left")
+    # axis[0].plot(sim.time_interval, sim.first_contrall_signal, color="blue", label="first signal")
+    # axis[0].legend(loc="upper left")
     
-    axis[1].plot(sim.time_interval, sim.second_contrall_signal, color="y", label="second signal")
+    # axis[1].plot(sim.time_interval, sim.second_contrall_signal, color="y", label="second signal")
+    # axis[1].legend(loc="upper left")
+
+    axis[0].plot(sim.time_interval, sim.anguler_position_data, color="green", label="anguler position")
+    axis[0].legend(loc="upper left")
+
+    axis[1].plot(sim.time_interval, sim.anguler_velocity_data, color="red", label="anguler vel")
     axis[1].legend(loc="upper left")
 
-    axis[2].plot(sim.time_interval, sim.anguler_position_data, color="green", label="anguler position")
+    axis[2].plot(sim.time_interval, sim.anguler_acceleration_data, color="teal", label="anguler acceleration")
     axis[2].legend(loc="upper left")
-
-    axis[3].plot(sim.time_interval, sim.anguler_velocity_data, color="red", label="anguler vel")
-    axis[3].legend(loc="upper left")
-
-    axis[4].plot(sim.time_interval, sim.anguler_acceleration_data, color="teal", label="anguler acceleration")
-    axis[4].legend(loc="upper left")
 
     plt.show()
     
