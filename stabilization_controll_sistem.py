@@ -1,3 +1,5 @@
+#!/usr/bin/python3
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -161,8 +163,8 @@ class Simulator():
 
     def __init__(self, simulation_max_step=20) -> None:
         
-        self.stab_sistem = StabilisationSistem(ki_angle=0.0013, kd_angle=0.030, kp_angle=12.7095,
-                                               ki_ang_vel=0.00096, kd_ang_vel=0.00034, kp_ang_vel=123.00020,
+        self.stab_sistem = StabilisationSistem(ki_angle=41.0013, kd_angle=80.030, kp_angle=150.7095,
+                                               ki_ang_vel=41.00096, kd_ang_vel=80.00034, kp_ang_vel=150.00020,
                                                first_contour_saturation_sup=50, first_contour_saturation_inf=300,
                                                second_contour_saturation_sup=5, second_contour_saturation_inf=15)
         

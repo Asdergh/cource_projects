@@ -100,7 +100,7 @@ class Simulator():
 
     def __init__(self, T_max) -> None:
         
-        self.contrall_sistem = ContrallSistem(k_p=150, k_i=0, k_d=30, contrall_limit=1000)
+        self.contrall_sistem = ContrallSistem(k_p=150, k_i=45.0, k_d=80, contrall_limit=1000)
         self.T_max = T_max
 
         self.acceleration_list = []
@@ -152,12 +152,12 @@ class Simulator():
         gs = f.add_gridspec(3, 5)
         
         axis_1 = f.add_subplot(gs[0, :-1])
-        axis_1.plot(self.position_tensor)
+        axis_1.plot(self.position_tensor, "b")
         axis_1.grid()
         axis_1.set_title("position")
 
         axis_2 = f.add_subplot(gs[1, :-1])
-        axis_2.plot(self.velocity_tensor)
+        axis_2.plot(self.velocity_tensor, "g")
         axis_2.grid()
         axis_2.set_title("velocity")
 
@@ -170,7 +170,7 @@ class Simulator():
 
 if __name__ == "__main__":
 
-    sim = Simulator(T_max=10)
+    sim = Simulator(T_max=20)
     sim.contrall_sistem.set_desired_position(10)
     sim.run_simulation()
     sim.show_result()
